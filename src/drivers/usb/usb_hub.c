@@ -43,6 +43,9 @@ struct usb_dev *usb_new_device(struct usb_dev *parent,
 	struct usb_dev *dev;
 	struct usb_hub *hub;
 
+	if (parent) {
+		log_debug("new device on addr[%d] port[%d]", parent->addr, port);
+	}
 	dev = pool_alloc(&usb_devs);
 	if (!dev) {
 		log_error("%s: pool_alloc failed\n", __func__);

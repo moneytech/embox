@@ -435,6 +435,8 @@ static int ehci_root_hub_control(struct usb_request *req) {
 	uint32_t wval;
 	unsigned port;
 
+	log_debug("endp->type(%d) token(%d) req->len(%d)", req->endp->type, req->token, req->len);
+
 	type_req = (ctrl->bm_request_type << 8) | ctrl->b_request;
 
 	port = ctrl->w_index - 1;
@@ -608,7 +610,7 @@ static int ehci_request(struct usb_request *req) {
 
 	assert(req);
 
-	log_debug("token %d req->len %d", req->token, req->len);
+	log_debug("endp->type(%d) token(%d) req->len(%d)", req->endp->type, req->token, req->len);
 
 	ehci = hcd_to_ehci(req->endp->dev->hcd);
 

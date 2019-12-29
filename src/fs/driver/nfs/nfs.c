@@ -554,10 +554,11 @@ static int nfs_create_dir_entry(struct inode *parent_node) {
 					predesc->file_attr.mode |= S_IFDIR;
 					break;
 				default:
-					/* unknown file type */
-					log_error("Unknown file type");
-					sysfree(rcv_buf);
-					return -1;
+					/* unknown file type. Skip it. */
+					log_error("Unknown file type=0x%x (name=%s). Skip it...\n",
+						predesc->file_attr.type,
+						predesc->file_name.name.data);
+					break;
 			}
 
 			if(0 == path_is_dotname(predesc->file_name.name.data,

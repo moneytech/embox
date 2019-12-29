@@ -457,6 +457,25 @@ static struct inode *nfs_create_file(struct nas *parent_nas, readdir_desc_t *pre
 	if (VALUE_FOLLOWS_YES == predesc->vf_attr) {
 		memcpy(&fi->attr, &predesc->file_attr,
 				sizeof(predesc->file_attr));
+
+		switch (predesc->file_attr.type) {
+			case 1:
+				/* regular file */
+				fi->attr.mode |= S_IFREG;
+				break;
+			case 2:
+			case 3:
+				/* directory */
+				fi->attr.mode |= S_IFDIR;
+				break;
+			default:
+				/* unknown file type. Skip it. */
+				log_error("Unknown file type=0x%x (name=%s). Skip it...\n",
+					predesc->file_attr.type,
+					predesc->file_name.name.data);
+				pool_free(&nfs_file_pool, fi);
+				return NULL;
+		}
 	}
 	if (VALUE_FOLLOWS_YES == predesc->vf_fh) {
 		memcpy(&fi->fh, &predesc->file_handle,
@@ -543,32 +562,12 @@ static int nfs_create_dir_entry(struct inode *parent_node) {
 			point += sizeof(vf);
 			predesc = (readdir_desc_t *) point;
 
-			switch (predesc->file_attr.type) {
-				case 1:
-					/* regular file */
-					predesc->file_attr.mode |= S_IFREG;
-					break;
-				case 2:
-				case 3:
-					/* directory */
-					predesc->file_attr.mode |= S_IFDIR;
-					break;
-				default:
-					/* unknown file type. Skip it. */
-					log_error("Unknown file type=0x%x (name=%s). Skip it...\n",
-						predesc->file_attr.type,
-						predesc->file_name.name.data);
-					break;
-			}
-
 			if(0 == path_is_dotname(predesc->file_name.name.data,
 									predesc->file_name.name.len)) {
-				if (NULL == (node = nfs_create_file(parent_nas, predesc))) {
-					sysfree(rcv_buf);
-					return -1;
-				}
-
-				if (node_is_directory(node)) {
+				node = nfs_create_file(parent_nas, predesc);
+				if (!node) {
+					log_error("nfs_create_file failed\n");
+				} else if (node_is_directory(node)) {
 					nfs_create_dir_entry(node);
 				}
 			}
